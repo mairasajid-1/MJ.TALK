@@ -188,15 +188,22 @@ CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);
 CREATE INDEX IF NOT EXISTS idx_messages_is_seen ON messages(is_seen) WHERE is_seen = FALSE;
 CREATE INDEX IF NOT EXISTS idx_notifications_unread_org ON notifications(org_id) WHERE read = FALSE;
 CREATE INDEX IF NOT EXISTS idx_notifications_unread_user ON notifications(target_user_id) WHERE read = FALSE;
-CREATE INDEX IF NOT EXISTS idx_kb_chatbot ON kb_articles(chatbot_id);
-CREATE INDEX IF NOT EXISTS idx_kb_org ON kb_articles(org_id);
-CREATE INDEX IF NOT EXISTS idx_kb_category ON kb_articles(category);
-CREATE INDEX IF NOT EXISTS idx_kb_published ON kb_articles(is_published) WHERE is_published = TRUE;
 CREATE INDEX IF NOT EXISTS idx_agent_status_online ON agent_status(online_status) WHERE online_status != 'offline';
 CREATE INDEX IF NOT EXISTS idx_typing_indicators_conversation ON typing_indicators(conversation_id);
 CREATE INDEX IF NOT EXISTS idx_typing_indicators_expires ON typing_indicators(expires_at);
 CREATE INDEX IF NOT EXISTS idx_purchase_requests_org ON purchase_requests(org_id);
 CREATE INDEX IF NOT EXISTS idx_purchase_requests_status ON purchase_requests(status);
+
+-- KB articles indexes (created only if table exists)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE tablename = 'kb_articles') THEN
+    CREATE INDEX IF NOT EXISTS idx_kb_chatbot ON kb_articles(chatbot_id);
+    CREATE INDEX IF NOT EXISTS idx_kb_org ON kb_articles(org_id);
+    CREATE INDEX IF NOT EXISTS idx_kb_category ON kb_articles(category);
+    CREATE INDEX IF NOT EXISTS idx_kb_published ON kb_articles(is_published) WHERE is_published = TRUE;
+  END IF;
+END $$;
 
 -- =====================================================
 -- STEP 7: Create Utility Functions
