@@ -192,7 +192,7 @@ function Hero() {
           }}
             onMouseEnter={e => { e.currentTarget.style.background = "#4dd4b8"; e.currentTarget.style.transform = "translateY(-1px)"; }}
             onMouseLeave={e => { e.currentTarget.style.background = "#1dbfa0"; e.currentTarget.style.transform = "none"; }}
-          >Start Free — No Card Needed</Link>
+          >Start Free No Card Needed</Link>
           <a href="#how-it-works" style={{
             border: "1.5px solid rgba(255,255,255,0.25)", color: "#fff",
             padding: "0.75rem 1.5rem", borderRadius: "7px",
