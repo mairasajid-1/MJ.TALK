@@ -1,5 +1,12 @@
 import type { NextConfig } from "next";
 
+// Environment validation in development
+if (process.env.NODE_ENV === "development") {
+  import("./src/lib/env-check").then(({ checkEnvironment }) => {
+    checkEnvironment();
+  });
+}
+
 const nextConfig: NextConfig = {
   // Optimize images
   images: {

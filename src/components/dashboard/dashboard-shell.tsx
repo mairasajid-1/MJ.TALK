@@ -136,6 +136,7 @@ function SidebarContent({ org, user, role, pathname, onClose, onSignOut }: Sideb
               )}
               <Link
                 href={item.href}
+                prefetch={true}
                 onClick={onClose}
                 style={{
                   display: "flex", alignItems: "center", gap: "0.65rem",

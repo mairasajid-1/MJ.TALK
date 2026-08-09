@@ -1,11 +1,16 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { cache } from "react";
 
 const SUPER_ADMIN_EMAIL = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL ?? "meerujutti0.001@gmail.com";
 
 export type UserRole = "super_admin" | "owner" | "agent" | "guest";
 
-export async function getUser() {
+/**
+ * React cache() deduplicates this call within a single server request.
+ * If the layout and a page both call getUser(), it only hits Supabase once.
+ */
+export const getUser = cache(async () => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -14,7 +19,7 @@ export async function getUser() {
 
   if (error || !user) return null;
   return user;
-}
+});
 
 export async function requireAuth() {
   const user = await getUser();

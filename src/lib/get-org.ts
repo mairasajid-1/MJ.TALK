@@ -1,30 +1,31 @@
+import { cache } from "react";
 import { createServiceClient } from "@/lib/supabase/server";
 
 /**
- * Gets the org ID for a given user using the service role client (bypasses RLS).
- * Use this in server components / API routes where the anon client might fail.
+ * Gets the org ID for a given user.
+ * Wrapped in React cache() so multiple calls with the same userId
+ * within a single server render share the same DB query result.
  */
-export async function getOrgId(userId: string): Promise<string | null> {
+export const getOrgId = cache(async (userId: string): Promise<string | null> => {
   const supabase = createServiceClient();
 
-  // Check ownership first
-  const { data: ownedOrg } = await supabase
-    .from("organizations")
-    .select("id")
-    .eq("owner_id", userId)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .single();
+  // Parallel: ownership + membership at the same time
+  const [ownedResult, memberResult] = await Promise.all([
+    supabase
+      .from("organizations")
+      .select("id")
+      .eq("owner_id", userId)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("team_members")
+      .select("org_id")
+      .eq("user_id", userId)
+      .not("accepted_at", "is", null)
+      .maybeSingle(),
+  ]);
 
-  if (ownedOrg) return ownedOrg.id;
-
-  // Check team membership
-  const { data: membership } = await supabase
-    .from("team_members")
-    .select("org_id")
-    .eq("user_id", userId)
-    .not("accepted_at", "is", null)
-    .maybeSingle();
-
-  return membership?.org_id ?? null;
-}
+  if (ownedResult.data?.id) return ownedResult.data.id;
+  return memberResult.data?.org_id ?? null;
+});
