@@ -1,0 +1,8 @@
+.next/
+node_modules/
+.turbo/
+# Local environment files
+.env*.local
+
+# Production secrets
+.env.production

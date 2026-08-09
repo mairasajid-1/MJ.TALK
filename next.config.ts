@@ -1,0 +1,67 @@
+import type { NextConfig } from "next";
+
+// Environment validation in development
+if (process.env.NODE_ENV === "development") {
+  import("./src/lib/env-check").then(({ checkEnvironment }) => {
+    checkEnvironment();
+  });
+}
+
+const nextConfig: NextConfig = {
+  // Optimize images
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**",
+      },
+    ],
+    formats: ["image/avif", "image/webp"],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+  },
+  
+  // Enable compression
+  compress: true,
+  
+  // React strict mode for better performance checks
+  reactStrictMode: true,
+  
+  async headers() {
+    return [
+      {
+        // Widget iframe — allow embedding from any origin, transparent background
+        source: "/widget/:path*",
+        headers: [
+          { key: "X-Frame-Options",              value: "ALLOWALL" },
+          { key: "Content-Security-Policy",       value: "frame-ancestors *" },
+          { key: "Cache-Control",                 value: "no-store" },
+        ],
+      },
+      {
+        // Purchase pages — never cache (Stripe flow must be fresh)
+        source: "/purchase/:path*",
+        headers: [
+          { key: "Cache-Control", value: "no-store, no-cache, must-revalidate" },
+          { key: "Pragma",        value: "no-cache" },
+        ],
+      },
+      {
+        // Static assets - aggressive caching
+        source: "/:all*(svg|jpg|jpeg|png|gif|ico|webp|avif|woff|woff2)",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        // API routes - no cache
+        source: "/api/:path*",
+        headers: [
+          { key: "Cache-Control", value: "no-store, max-age=0" },
+        ],
+      },
+    ];
+  },
+};
+
+export default nextConfig;
