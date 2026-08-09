@@ -103,7 +103,7 @@ export default function ContactPage() {
             How can we help?
           </h1>
           <p style={{ color:"rgba(255,255,255,0.5)",fontSize:"1rem",maxWidth:480,margin:"0 auto" }}>
-            Reach out with any question — we typically reply within a few hours.
+            Reach out with any question we typically reply within a few hours.
           </p>
         </div>
 

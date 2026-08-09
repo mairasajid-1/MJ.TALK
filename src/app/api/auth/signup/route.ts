@@ -1,8 +1,43 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
+
+// Check environment configuration first
+function checkConfig() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  const errors: string[] = [];
+
+  if (!url || url.includes('your_') || url.includes('_here')) {
+    errors.push('NEXT_PUBLIC_SUPABASE_URL is missing or has placeholder value');
+  }
+  if (!anonKey || anonKey.includes('your_') || anonKey.includes('_here')) {
+    errors.push('NEXT_PUBLIC_SUPABASE_ANON_KEY is missing or has placeholder value');
+  }
+  if (!serviceKey || serviceKey.includes('your_') || serviceKey.includes('_here')) {
+    errors.push('SUPABASE_SERVICE_ROLE_KEY is missing or has placeholder value');
+  }
+
+  return { isConfigured: errors.length === 0, errors };
+}
 
 export async function POST(req: NextRequest) {
   try {
+    const { isConfigured, errors } = checkConfig();
+    
+    if (!isConfigured) {
+      console.error('Supabase not configured:', errors);
+      return NextResponse.json(
+        { 
+          error: "Setup required",
+          details: "Supabase credentials not configured",
+          missingConfig: errors 
+        }, 
+        { status: 503 }
+      );
+    }
+
+    const { createServiceClient } = await import("@/lib/supabase/server");
     const { email, password, orgName } = await req.json();
 
     if (!email || !password || !orgName) {
@@ -88,6 +123,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, emailConfirmRequired: false });
   } catch (err) {
     console.error("Signup error:", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    const message = err instanceof Error ? err.message : "Internal server error";
+    
+    // Check if it's a configuration error
+    if (message.includes("Supabase configuration") || message.includes("undefined")) {
+      return NextResponse.json(
+        { 
+          error: "Setup required",
+          details: "Please check your Supabase environment variables",
+          debugInfo: message
+        }, 
+        { status: 503 }
+      );
+    }
+    
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

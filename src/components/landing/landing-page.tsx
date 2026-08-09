@@ -177,7 +177,7 @@ function Hero() {
           fontSize: "1.05rem", color: "rgba(255,255,255,0.72)",
           lineHeight: 1.7, maxWidth: "480px", marginBottom: "2rem",
         }}>
-          MJ.TALK puts a live support agent — or a smart AI bot — in your
+          MJ.TALK puts a live support agent or a smart AI bot in your
           customers&apos; hands the moment they land on your site. Zero friction, real results.
         </p>
 
@@ -443,7 +443,7 @@ function Features() {
 ══════════════════════════════════════════ */
 function HowItWorks() {
   const steps = [
-    { num: "01", title: "Add the widget snippet", desc: "Copy one line of JavaScript and paste it into your site's <head>. Works on any platform — WordPress, Webflow, Shopify, or custom code." },
+    { num: "01", title: "Add the widget snippet", desc: "Copy one line of JavaScript and paste it into your site's <head>. Works on any platform WordPress, Webflow, Shopify, or custom code." },
     { num: "02", title: "Customize your chat widget", desc: "Set your brand color, greeting message, and agent profiles in the dashboard. No design skills needed." },
     { num: "03", title: "Start talking to customers", desc: "Reply from the web dashboard, iOS or Android app. Set up the AI bot to cover off-hours automatically." },
   ];
@@ -614,7 +614,7 @@ const plans = [
     features: [
       "Unlimited chats",
       "Unlimited agent seats",
-      "AI chatbot — 1,000 replies / mo",
+      "AI chatbot 1,000 replies / month",
       "Visitor tracking",
       "CRM integrations",
       "Priority support",

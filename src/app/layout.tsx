@@ -7,9 +7,9 @@ import { SSRPolyfill } from "@/components/ssr-polyfill";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", weight: ["400", "500", "600", "700", "800"] });
 
 export const metadata: Metadata = {
-  title: "MJ.TALK — Live Chat & AI Support for Modern Businesses",
+  title: "MJ.TALK Live Chat & AI Support for Modern Businesses",
   description:
-    "MJ.TALK puts a live support agent or a smart AI bot in your customers' hands the moment they land on your site. Start free — no card needed.",
+    "MJ.TALK puts a live support agent or a smart AI bot in your customers' hands the moment they land on your site. Start free no card needed.",
 };
 
 const matchMediaPatch = `

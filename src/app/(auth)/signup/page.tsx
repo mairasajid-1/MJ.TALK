@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertTriangle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { isConfigurationError, formatErrorMessage } from "@/lib/api-error-handler";
 
 const SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "support@mjtalk.com";
 
@@ -14,11 +15,13 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading]                 = useState(false);
   const [error, setError]                     = useState<string | null>(null);
+  const [isConfigError, setIsConfigError]     = useState(false);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setIsConfigError(false);
 
     if (password !== confirmPassword) {
       setError("Passwords do not match");
@@ -32,30 +35,42 @@ export default function SignupPage() {
     }
 
     // Step 1 — create account + org via API
-    const res  = await fetch("/api/auth/signup", {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ email, password, orgName }),
-    });
-    const data = await res.json();
+    try {
+      const res = await fetch("/api/auth/signup", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ email, password, orgName }),
+      });
+      const data = await res.json();
 
-    if (!res.ok) {
-      setError(data.error ?? "Failed to create account");
+      if (!res.ok) {
+        const isConfig = isConfigurationError(data);
+        setIsConfigError(isConfig);
+        
+        if (isConfig) {
+          setError("⚠️ Setup required: Please configure your Supabase credentials. See /debug/config for details.");
+        } else {
+          setError(formatErrorMessage(data));
+        }
+        setLoading(false);
+        return;
+      }
+
+      // Step 2 — sign in immediately (account is pre-confirmed)
+      const supabase = createClient();
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInError) {
+        // Account was created, just couldn't auto-login — send to login page
+        window.location.href = "/login";
+        return;
+      }
+
+      // Step 3 — go to onboarding
+      window.location.href = "/onboarding";
+    } catch (err) {
+      setError("Network error. Please check your connection and try again.");
       setLoading(false);
-      return;
     }
-
-    // Step 2 — sign in immediately (account is pre-confirmed)
-    const supabase = createClient();
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-    if (signInError) {
-      // Account was created, just couldn't auto-login — send to login page
-      window.location.href = "/login";
-      return;
-    }
-
-    // Step 3 — go to onboarding
-    window.location.href = "/onboarding";
   };
 
   const inputStyle: React.CSSProperties = {
@@ -92,8 +107,27 @@ export default function SignupPage() {
           <p style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.5)", marginBottom: "1.5rem" }}>Set up your AI support platform</p>
 
           {error && (
-            <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", color: "#fca5a5", fontSize: "0.875rem", padding: "0.75rem 1rem", borderRadius: "8px", marginBottom: "1.25rem" }}>
-              {error}
+            <div style={{
+              background: isConfigError ? "rgba(194,65,12,0.15)" : "rgba(239,68,68,0.1)",
+              border: isConfigError ? "1px solid rgba(194,65,12,0.3)" : "1px solid rgba(239,68,68,0.25)",
+              color: isConfigError ? "#fbbf24" : "#fca5a5",
+              fontSize: "0.875rem",
+              padding: "0.75rem 1rem",
+              borderRadius: "8px",
+              marginBottom: "1.25rem",
+              display: "flex",
+              gap: "0.5rem",
+              alignItems: "flex-start"
+            }}>
+              <AlertTriangle size={16} style={{ marginTop: "0.125rem", flexShrink: 0 }} />
+              <div>
+                <div>{error}</div>
+                {isConfigError && (
+                  <Link href="/debug/config" style={{ color: "#1dbfa0", textDecoration: "underline", fontSize: "0.8rem", marginTop: "0.5rem", display: "inline-block" }}>
+                    View configuration status →
+                  </Link>
+                )}
+              </div>
             </div>
           )}
 
