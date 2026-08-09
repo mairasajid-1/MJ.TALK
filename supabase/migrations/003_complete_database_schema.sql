@@ -43,6 +43,23 @@ ALTER TABLE IF EXISTS conversations
 -- Add message metadata and delivery tracking
 -- =====================================================
 
+-- First, rename sender_type to role if it hasn't been done already
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'messages' AND column_name = 'sender_type'
+  ) THEN
+    ALTER TABLE messages RENAME COLUMN sender_type TO role;
+  END IF;
+END $$;
+
+-- Update the role constraint to match application expectations
+ALTER TABLE messages
+  DROP CONSTRAINT IF EXISTS messages_role_check;
+ALTER TABLE messages
+  ADD CONSTRAINT messages_role_check CHECK (role IN ('user', 'assistant', 'admin'));
+
 ALTER TABLE IF EXISTS messages
   ADD COLUMN IF NOT EXISTS message_type TEXT DEFAULT 'text'
     CHECK (message_type IN ('text', 'image', 'file', 'system')),
@@ -50,10 +67,6 @@ ALTER TABLE IF EXISTS messages
   ADD COLUMN IF NOT EXISTS delivery_status TEXT DEFAULT 'sent'
     CHECK (delivery_status IN ('pending', 'sent', 'delivered', 'failed')),
   ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'::jsonb;
-
--- Rename sender_type to role if needed (for backwards compatibility)
-ALTER TABLE IF EXISTS messages
-  RENAME COLUMN IF EXISTS sender_type TO role;
 
 -- =====================================================
 -- STEP 4: Extend Notifications Table
@@ -79,7 +92,26 @@ ALTER TABLE notifications
   );
 
 -- =====================================================
--- STEP 5: Create Missing Tables
+-- STEP 5B: Create KB Articles Table (after chatbots extended)
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS kb_articles (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  chatbot_id UUID NOT NULL REFERENCES chatbots(id) ON DELETE CASCADE,
+  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  category TEXT DEFAULT 'general'
+    CHECK (category IN ('general', 'account', 'payment', 'refund', 'technical', 'setup', 'faq')),
+  tags TEXT[] DEFAULT '{}',
+  is_published BOOLEAN DEFAULT TRUE,
+  created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- =====================================================
+-- STEP 5C: Create Remaining Tables
 -- =====================================================
 
 -- Profiles table (user roles and status)
@@ -114,22 +146,6 @@ CREATE TABLE IF NOT EXISTS typing_indicators (
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   expires_at TIMESTAMPTZ DEFAULT NOW() + INTERVAL '3 seconds'
-);
-
--- Knowledge base articles
-CREATE TABLE IF NOT EXISTS kb_articles (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  chatbot_id UUID NOT NULL REFERENCES chatbots(id) ON DELETE CASCADE,
-  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-  title TEXT NOT NULL,
-  content TEXT NOT NULL,
-  category TEXT DEFAULT 'general'
-    CHECK (category IN ('general', 'account', 'payment', 'refund', 'technical', 'setup', 'faq')),
-  tags TEXT[] DEFAULT '{}',
-  is_published BOOLEAN DEFAULT TRUE,
-  created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Purchase requests (for enterprise/upgrade tracking)
