@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MJ.TALK Widget Test</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%);
+      color: white;
+      min-height: 100vh;
+      padding: 40px;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    header {
+      margin-bottom: 60px;
+    }
+    
+    nav {
+      display: flex;
+      gap: 30px;
+      margin-bottom: 40px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    nav a {
+      color: rgba(255,255,255,0.7);
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+    
+    nav a:hover {
+      color: white;
+    }
+    
+    h1 {
+      font-size: 48px;
+      margin-bottom: 20px;
+    }
+    
+    p {
+      font-size: 18px;
+      color: rgba(255,255,255,0.7);
+      line-height: 1.6;
+    }
+    
+    .status {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 40px;
+    }
+    
+    .status h2 {
+      margin-bottom: 15px;
+      font-size: 20px;
+    }
+    
+    .status ul {
+      list-style: none;
+    }
+    
+    .status li {
+      padding: 8px 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .status li::before {
+      content: "→";
+      color: #4CAF50;
+    }
+    
+    .instructions {
+      margin-top: 40px;
+      padding: 30px;
+      background: rgba(33, 150, 243, 0.1);
+      border-left: 4px solid #2196F3;
+      border-radius: 8px;
+    }
+    
+    .instructions h3 {
+      margin-bottom: 15px;
+    }
+    
+    .instructions ol {
+      margin-left: 20px;
+      line-height: 1.8;
+    }
+    
+    .code-block {
+      background: rgba(0,0,0,0.3);
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <nav>
+        <a href="#about">About</a>
+        <a href="#skills">Skills</a>
+        <a href="#projects">Projects</a>
+        <a href="#blog">Blog</a>
+        <a href="#contact">Contact</a>
+      </nav>
+      
+      <h1>Widget Test Page</h1>
+      <p>Testing the MJ.TALK chat widget on a dark background (similar to your portfolio).</p>
+    </header>
+
+    <div class="status">
+      <h2>✅ What to Expect:</h2>
+      <ul>
+        <li>Orange circular button in bottom-right corner</li>
+        <li>Button should be clickable (hover shows pointer cursor)</li>
+        <li>Click button → Chat window slides up</li>
+        <li>Chat window has white background, clean styling</li>
+        <li>All navigation links remain clickable</li>
+      </ul>
+    </div>
+
+    <div class="instructions">
+      <h3>📝 Instructions:</h3>
+      <ol>
+        <li>Save this HTML file</li>
+        <li>Update the chatbotId and apiUrl below</li>
+        <li>Open in browser</li>
+        <li>Test the widget</li>
+      </ol>
+      
+      <div class="code-block">
+&lt;!-- Update these values --&gt;<br>
+chatbotId: "YOUR_CHATBOT_ID_HERE"<br>
+apiUrl: "https://your-domain.vercel.app"
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MJ.TALK WIDGET EMBED CODE
+       ========================================== -->
+  
+  <script>
+    // ⚠️ UPDATE THESE VALUES:
+    window.SupportAIConfig = {
+      chatbotId: "YOUR_CHATBOT_ID_HERE",  // Get from dashboard
+      apiUrl: "https://your-domain.vercel.app"  // Your Vercel URL
+    };
+    
+    // Debug logging
+    console.log("Widget config:", window.SupportAIConfig);
+  </script>
+  
+  <script src="https://your-domain.vercel.app/widget.js"></script>
+  
+  <!-- Debug script to check if widget loaded -->
+  <script>
+    setTimeout(function() {
+      console.log("=== WIDGET DEBUG ===");
+      console.log("Iframe exists:", !!document.getElementById("supportai-widget-iframe"));
+      console.log("SupportAI API:", window.SupportAI);
+      
+      var iframe = document.getElementById("supportai-widget-iframe");
+      if (iframe) {
+        console.log("Iframe src:", iframe.src);
+        console.log("Iframe pointer-events:", window.getComputedStyle(iframe).pointerEvents);
+      } else {
+        console.error("❌ Iframe not found! Widget script didn't load.");
+      }
+    }, 2000);
+  </script>
+</body>
+</html>
