@@ -22,13 +22,43 @@ export async function POST(req: NextRequest) {
 
     const supabase = createServiceClient();
 
-    const { data: message, error } = await supabase
+    // Map role to sender_type for database compatibility
+    // Database might use either 'role' or 'sender_type' column
+    const roleMapping: Record<string, string> = {
+      user: "visitor",
+      assistant: "ai",
+      admin: "agent"
+    };
+
+    // Try with 'role' column first (new schema)
+    let { data: message, error } = await supabase
       .from("messages")
-      .insert({ conversation_id: conversationId, role, content })
+      .insert({ 
+        conversation_id: conversationId, 
+        role: role,  // Try new schema first
+        content 
+      })
       .select()
       .single();
 
+    // If that fails, try with sender_type column (old schema)
+    if (error && error.message.includes("sender_type")) {
+      const result = await supabase
+        .from("messages")
+        .insert({ 
+          conversation_id: conversationId, 
+          sender_type: roleMapping[role],  // Map to old schema values
+          content 
+        })
+        .select()
+        .single();
+      
+      message = result.data;
+      error = result.error;
+    }
+
     if (error) {
+      console.error("Message insert error:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 

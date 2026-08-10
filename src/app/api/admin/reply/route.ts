@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Insert the admin reply using service client (bypasses messages RLS)
-  const { data: message, error } = await serviceClient
+  let { data: message, error } = await serviceClient
     .from("messages")
     .insert({
       conversation_id: conversationId,
@@ -70,6 +70,21 @@ export async function POST(req: NextRequest) {
     })
     .select()
     .single();
+
+  // If insert failed due to sender_type constraint, try old schema
+  if (error && error.message.includes("sender_type")) {
+    const result = await serviceClient
+      .from("messages")
+      .insert({
+        conversation_id: conversationId,
+        sender_type: "agent",  // Old schema value
+        content: content.trim(),
+      })
+      .select()
+      .single();
+    message = result.data;
+    error = result.error;
+  }
 
   if (error) {
     console.error("[admin/reply] insert error:", error);

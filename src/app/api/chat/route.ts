@@ -118,12 +118,21 @@ async function handleCompletion(
 ) {
   if (!conversationId || !fullText) return;
 
-  // 1. Persist AI message
-  await supabase.from("messages").insert({
+  // 1. Persist AI message - handle both old and new schema
+  const { error: insertError } = await supabase.from("messages").insert({
     conversation_id: conversationId,
     role: "assistant",
     content: fullText,
   });
+
+  // If insert failed due to sender_type constraint, try old schema
+  if (insertError && insertError.message.includes("sender_type")) {
+    await supabase.from("messages").insert({
+      conversation_id: conversationId,
+      sender_type: "ai",  // Old schema value
+      content: fullText,
+    });
+  }
 
   // 2. Detect intent from user message and upsert ai_session
   try {
