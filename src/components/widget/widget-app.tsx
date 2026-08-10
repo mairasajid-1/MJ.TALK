@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
-  MessageCircle, X, Send, User, Smile, Paperclip,
+  MessageCircle, X, Send, User,
   RotateCcw, Volume2, VolumeX, Minimize2, UserCheck,
 } from "lucide-react";
 import { cn, generateSessionId } from "@/lib/utils";
@@ -80,7 +80,6 @@ export function WidgetApp({ config }: WidgetAppProps) {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [showEmojiHint, setShowEmojiHint] = useState(false);
   const [sessionId] = useState(() => {
     if (typeof window === "undefined") return generateSessionId();
     const stored = sessionStorage.getItem(`si_${config.id}`);
@@ -465,200 +464,246 @@ export function WidgetApp({ config }: WidgetAppProps) {
   };
 
   const color       = config.widget_color;
-  const lightColor  = `${color}18`;
+  const mutedColor  = `${color}15`; // Very subtle background
   const fmt = (d: Date) => d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
   /* ══════════════════ RENDER ══════════════════ */
   return (
-    <div className="fixed bottom-5 right-5 z-[2147483647] flex flex-col items-end gap-3 font-sans select-none">
+    <div className="fixed bottom-6 right-6 z-[2147483647] flex flex-col items-end gap-3 font-sans select-none">
 
       {/* ── Chat window ── */}
       {isOpen && !isMinimized && (
         <div
-          className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 shadow-2xl"
+          className="flex flex-col overflow-hidden border shadow-2xl"
           style={{ 
-            width: "370px", 
-            height: "580px", 
+            width: "380px", 
+            height: "600px", 
             background: "#ffffff",
-            animation: "widgetSlideIn 0.22s cubic-bezier(0.34,1.56,0.64,1)" 
+            borderRadius: "12px",
+            borderColor: "#e5e7eb",
+            animation: "widgetSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)" 
           }}
         >
-          {/* Header */}
-          <div className="flex items-center gap-3 px-4 py-3 flex-shrink-0"
-            style={{ background: `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)` }}>
-            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-white/20 ring-2 ring-white/30">
-              {config.avatar_url
-                // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={config.avatar_url} alt="Bot" className="w-full h-full rounded-full object-cover" />
-                : <MessageCircle className="w-5 h-5 text-white" />}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-white font-semibold text-sm leading-tight">{config.name}</p>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className={cn(
-                  "w-2 h-2 rounded-full flex-shrink-0",
-                  chatState === "ai_responding" ? "bg-amber-300 animate-pulse" :
-                  chatState === "waiting_agent" ? "bg-orange-300 animate-pulse" :
-                  chatState === "agent_joined"  ? "bg-emerald-300" :
-                  "bg-emerald-300 animate-pulse"
-                )} />
-                <span className="text-white/80 text-xs">
-                  {escalationPending    ? "Connecting to agent…"  :
-                   chatState === "ai_responding" ? "AI is responding…" :
-                   chatState === "waiting_agent" ? "Waiting for agent…" :
-                   chatState === "agent_joined"  ? "Agent connected ✓" :
-                   isEscalated ? "Human agent joining…" :
-                   "Online · replies instantly"}
-                </span>
+          {/* Header - Clean & Minimal */}
+          <div 
+            className="flex items-center justify-between px-5 py-4 border-b flex-shrink-0"
+            style={{ 
+              background: "#ffffff",
+              borderColor: "#f3f4f6"
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                style={{ background: mutedColor }}>
+                {config.avatar_url
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img src={config.avatar_url} alt="Bot" className="w-full h-full rounded-lg object-cover" />
+                  : <MessageCircle className="w-4.5 h-4.5" style={{ color }} />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm text-gray-900 leading-tight">{config.name}</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span 
+                    className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                    style={{ 
+                      background: chatState === "agent_joined" ? "#10b981" : "#94a3b8",
+                      opacity: chatState === "ai_responding" || chatState === "waiting_agent" ? 0.6 : 1
+                    }} 
+                  />
+                  <span className="text-gray-500 text-xs font-normal">
+                    {escalationPending ? "Connecting..." :
+                     chatState === "ai_responding" ? "Typing..." :
+                     chatState === "waiting_agent" ? "Connecting to agent..." :
+                     chatState === "agent_joined" ? "Agent online" :
+                     isEscalated ? "Waiting for agent..." :
+                     "Online"}
+                  </span>
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <button onClick={() => setSoundEnabled((s) => !s)} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors" title={soundEnabled ? "Mute" : "Unmute"}>
-                {soundEnabled ? <Volume2 className="w-3.5 h-3.5 text-white/80" /> : <VolumeX className="w-3.5 h-3.5 text-white/80" />}
+            <div className="flex items-center gap-1">
+              <button 
+                onClick={() => setSoundEnabled((s) => !s)} 
+                className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-100 transition-colors"
+                title={soundEnabled ? "Mute" : "Unmute"}
+              >
+                {soundEnabled ? 
+                  <Volume2 className="w-4 h-4 text-gray-500" /> : 
+                  <VolumeX className="w-4 h-4 text-gray-500" />
+                }
               </button>
-              <button onClick={() => setIsMinimized(true)} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors" title="Minimize">
-                <Minimize2 className="w-3.5 h-3.5 text-white/80" />
+              <button 
+                onClick={() => setIsMinimized(true)} 
+                className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-100 transition-colors"
+                title="Minimize"
+              >
+                <Minimize2 className="w-4 h-4 text-gray-500" />
               </button>
-              <button onClick={handleReset} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors" title="New chat">
-                <RotateCcw className="w-3.5 h-3.5 text-white/80" />
+              <button 
+                onClick={handleReset} 
+                className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-100 transition-colors"
+                title="New chat"
+              >
+                <RotateCcw className="w-4 h-4 text-gray-500" />
               </button>
-              <button onClick={() => setIsOpen(false)} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors" title="Close">
-                <X className="w-4 h-4 text-white" />
+              <button 
+                onClick={() => setIsOpen(false)} 
+                className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-100 transition-colors"
+                title="Close"
+              >
+                <X className="w-4 h-4 text-gray-500" />
               </button>
             </div>
           </div>
 
           {/* Pre-chat form */}
           {showPreChat ? (
-            <div className="flex-1 overflow-y-auto p-5" style={{ background: "#f8fafc" }}>
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-sm" style={{ background: lightColor }}>
-                  <MessageCircle className="w-8 h-8" style={{ color }} />
-                </div>
-                <h3 className="font-bold text-slate-900 text-base">Start a conversation</h3>
-                <p className="text-slate-500 text-sm mt-1">We&apos;ll reach out to you right away.</p>
+            <div className="flex-1 overflow-y-auto px-6 py-6" style={{ background: "#fafafa" }}>
+              <div className="mb-6">
+                <h3 className="font-semibold text-gray-900 text-base mb-2">Start a conversation</h3>
+                <p className="text-gray-600 text-sm">We typically reply within a few minutes.</p>
               </div>
-              {error && <div className="mb-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2 text-center">{error}</div>}
-              <form onSubmit={handlePreChatSubmit} className="space-y-3">
+              {error && (
+                <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-4 py-3">
+                  {error}
+                </div>
+              )}
+              <form onSubmit={handlePreChatSubmit} className="space-y-4">
                 <div>
-                  <label className="text-xs font-semibold text-slate-600 block mb-1.5">Your Name *</label>
-                  <input type="text" value={preChatData.name} onChange={(e) => setPreChatData((p) => ({ ...p, name: e.target.value }))} placeholder="Jane Smith" required className="w-full border border-slate-200 bg-white rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 transition-shadow" />
+                  <label className="text-sm font-medium text-gray-700 block mb-2">Name</label>
+                  <input 
+                    type="text" 
+                    value={preChatData.name} 
+                    onChange={(e) => setPreChatData((p) => ({ ...p, name: e.target.value }))} 
+                    placeholder="Your name" 
+                    required 
+                    className="w-full border border-gray-300 bg-white rounded-lg px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-shadow" 
+                  />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-600 block mb-1.5">Email Address *</label>
-                  <input type="email" value={preChatData.email} onChange={(e) => setPreChatData((p) => ({ ...p, email: e.target.value }))} placeholder="jane@example.com" required className="w-full border border-slate-200 bg-white rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 transition-shadow" />
+                  <label className="text-sm font-medium text-gray-700 block mb-2">Email</label>
+                  <input 
+                    type="email" 
+                    value={preChatData.email} 
+                    onChange={(e) => setPreChatData((p) => ({ ...p, email: e.target.value }))} 
+                    placeholder="you@example.com" 
+                    required 
+                    className="w-full border border-gray-300 bg-white rounded-lg px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-shadow" 
+                  />
                 </div>
-                <button type="submit" className="w-full py-3 rounded-xl text-white font-semibold text-sm transition-all hover:opacity-90 active:scale-[0.98] mt-1 shadow-sm" style={{ background: `linear-gradient(135deg, ${color} 0%, ${color}cc 100%)` }}>
-                  Start Chat →
+                <button 
+                  type="submit" 
+                  className="w-full py-2.5 rounded-lg text-white font-medium text-sm transition-all hover:opacity-90 active:scale-[0.99] mt-2"
+                  style={{ background: "#18181b" }}
+                >
+                  Start chat
                 </button>
               </form>
             </div>
           ) : (
             <>
-              {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ scrollBehavior: "smooth", background: "#f8fafc" }}>
+              {/* Messages - Clean minimal style */}
+              <div className="flex-1 overflow-y-auto px-5 py-5 space-y-4" style={{ scrollBehavior: "smooth", background: "#fafafa" }}>
                 {messages.map((msg, i) => {
                   const isUser = msg.role === "user";
                   const showTime = i === messages.length - 1 || Math.abs(messages[i + 1].timestamp.getTime() - msg.timestamp.getTime()) > 60000;
                   return (
                     <div key={msg.id} className={cn("flex gap-2.5", isUser ? "justify-end" : "justify-start")}>
                       {!isUser && (
-                        <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-sm" style={{ background: lightColor }}>
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+                          style={{ background: mutedColor }}>
                           {msg.role === "admin"
                             ? <User className="w-3.5 h-3.5" style={{ color }} />
                             : config.avatar_url
                               // eslint-disable-next-line @next/next/no-img-element
-                              ? <img src={config.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
+                              ? <img src={config.avatar_url} alt="" className="w-full h-full rounded-lg object-cover" />
                               : <MessageCircle className="w-3.5 h-3.5" style={{ color }} />}
                         </div>
                       )}
-                      <div className={cn("flex flex-col max-w-[78%]", isUser && "items-end")}>
-                        {i === 0 || messages[i - 1].role !== msg.role ? (
-                          <span className="text-xs text-slate-400 mb-1 ml-0.5">
-                            {isUser ? "" : msg.role === "admin" ? "Agent" : config.name}
-                          </span>
-                        ) : null}
+                      <div className={cn("flex flex-col max-w-[75%]", isUser && "items-end")}>
                         <div
                           className={cn(
-                            "px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed break-words",
-                            isUser ? "text-white rounded-tr-sm shadow-sm" : "border border-slate-100 text-slate-800 rounded-tl-sm shadow-sm",
-                            msg.role === "admin" && "!bg-emerald-500 !text-white !border-emerald-400"
+                            "px-3.5 py-2.5 text-sm leading-relaxed break-words",
+                            isUser 
+                              ? "bg-gray-900 text-white rounded-2xl rounded-tr-md" 
+                              : "bg-white text-gray-900 rounded-2xl rounded-tl-md border border-gray-200",
+                            msg.role === "admin" && "!bg-blue-600 !text-white !border-blue-500"
                           )}
-                          style={isUser ? { background: `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)` } : { background: "#ffffff" }}
                           {...(isUser ? {} : { dangerouslySetInnerHTML: { __html: renderMarkdown(msg.content) } })}
                         >
                           {isUser ? msg.content : undefined}
                         </div>
-                        {showTime && <span className="text-xs text-slate-300 mt-1 px-1">{fmt(msg.timestamp)}</span>}
+                        {showTime && (
+                          <span className="text-xs text-gray-400 mt-1 px-1">{fmt(msg.timestamp)}</span>
+                        )}
                       </div>
-                      {isUser && (
-                        <div className="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0 mt-1">
-                          <User className="w-3.5 h-3.5 text-slate-500" />
-                        </div>
-                      )}
                     </div>
                   );
                 })}
 
-                {/* AI/agent typing indicator */}
+                {/* Typing indicator - minimal */}
                 {(isTyping || agentIsTyping) && (
                   <div className="flex gap-2.5 justify-start">
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: lightColor }}>
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                      style={{ background: mutedColor }}>
                       {agentIsTyping
                         ? <User className="w-3.5 h-3.5" style={{ color }} />
                         : <MessageCircle className="w-3.5 h-3.5" style={{ color }} />}
                     </div>
-                    <div className="border border-slate-100 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm" style={{ background: "#ffffff" }}>
+                    <div className="bg-white border border-gray-200 rounded-2xl rounded-tl-md px-4 py-3">
                       <div className="flex gap-1 items-center h-4">
                         {[0, 1, 2].map((i) => (
-                          <div key={i} className="w-1.5 h-1.5 rounded-full typing-dot" style={{ backgroundColor: `${color}99` }} />
+                          <div 
+                            key={i} 
+                            className="w-1.5 h-1.5 rounded-full typing-dot bg-gray-400"
+                          />
                         ))}
                       </div>
                     </div>
-                    {agentIsTyping && (
-                      <span className="text-xs text-slate-400 self-end mb-1">Agent typing…</span>
-                    )}
                   </div>
                 )}
 
                 {error && (
-                  <div className="text-center text-xs text-red-500 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">
-                    <p className="font-medium mb-1">⚠️ Something went wrong</p>
-                    <p>{error}</p>
-                    <div className="flex items-center justify-center gap-2 mt-2">
+                  <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+                    <p className="text-sm text-red-800 font-medium mb-1">Something went wrong</p>
+                    <p className="text-sm text-red-600">{error}</p>
+                    <div className="flex items-center gap-2 mt-2">
                       {sendRetryFn && (
-                        <button onClick={() => { sendRetryFn(); }} className="underline hover:no-underline font-medium">
+                        <button 
+                          onClick={() => { sendRetryFn(); }} 
+                          className="text-sm text-red-700 hover:text-red-900 font-medium"
+                        >
                           Retry
                         </button>
                       )}
-                      <button onClick={() => setError(null)} className="text-slate-400 underline hover:no-underline">Dismiss</button>
+                      <button 
+                        onClick={() => setError(null)} 
+                        className="text-sm text-red-600 hover:text-red-800"
+                      >
+                        Dismiss
+                      </button>
                     </div>
                   </div>
                 )}
 
                 {/* Chat state indicators */}
                 {chatState === "waiting_agent" && (
-                  <div className="rounded-xl px-3 py-3 border text-center" style={{ background: `${color}10`, borderColor: `${color}30` }}>
-                    <p className="text-xs font-semibold mb-1" style={{ color }}>🔔 Human Agent Requested</p>
-                    <p className="text-xs text-slate-500">A support agent has been notified and will join shortly.</p>
-                    <div className="flex justify-center gap-1 mt-2">
-                      {[0, 1, 2].map((i) => (
-                        <div key={i} className="w-1.5 h-1.5 rounded-full typing-dot" style={{ backgroundColor: `${color}80` }} />
-                      ))}
-                    </div>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
+                    <p className="text-sm font-medium text-blue-900 mb-1">Connecting to support</p>
+                    <p className="text-sm text-blue-700">A team member will join shortly.</p>
                   </div>
                 )}
 
                 {chatState === "agent_joined" && (
-                  <div className="rounded-xl px-3 py-2.5 border text-center bg-emerald-50 border-emerald-200">
-                    <p className="text-xs font-semibold text-emerald-700">✅ Agent Connected</p>
-                    <p className="text-xs text-emerald-600 mt-0.5">You are now chatting with a human agent.</p>
+                  <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3">
+                    <p className="text-sm font-medium text-green-900">Agent connected</p>
+                    <p className="text-sm text-green-700 mt-0.5">You're now chatting with a team member.</p>
                   </div>
                 )}
 
                 {isEscalated && chatState !== "waiting_agent" && chatState !== "agent_joined" && (
-                  <div className="text-center text-xs rounded-xl px-3 py-2.5 border" style={{ background: `${color}18`, borderColor: `${color}40`, color }}>
-                    ✅ A human agent has been notified and will join shortly.
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
+                    <p className="text-sm text-blue-800">A team member has been notified and will join shortly.</p>
                   </div>
                 )}
 
@@ -667,13 +712,12 @@ export function WidgetApp({ config }: WidgetAppProps) {
                     <button
                       onClick={handleRequestHuman}
                       disabled={escalationPending}
-                      className="flex items-center gap-1.5 text-xs px-3.5 py-1.5 rounded-full border transition-all hover:opacity-80 active:scale-95 disabled:opacity-50"
-                      style={{ borderColor: `${color}50`, color, background: `${color}10` }}
+                      className="flex items-center gap-2 text-sm px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 font-medium transition-all hover:bg-gray-50 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {escalationPending ? (
                         <>
-                          <span className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
-                          Connecting…
+                          <span className="w-3.5 h-3.5 rounded-full border-2 border-gray-400 border-t-transparent animate-spin" />
+                          Connecting...
                         </>
                       ) : (
                         <>
@@ -688,15 +732,9 @@ export function WidgetApp({ config }: WidgetAppProps) {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Input bar */}
-              <div className="border-t border-slate-100 px-3 py-2.5 flex-shrink-0" style={{ background: "#ffffff" }}>
-                <div className="flex items-end gap-2">
-                  <button onClick={() => setShowEmojiHint((s) => !s)} className="w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors flex-shrink-0 mb-1" title="Emoji">
-                    <Smile className="w-4 h-4" />
-                  </button>
-                  <button className="w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors flex-shrink-0 mb-1" title="Attach file" onClick={() => alert("File attachments coming soon!")}>
-                    <Paperclip className="w-4 h-4" />
-                  </button>
+              {/* Input bar - Clean & Minimal */}
+              <div className="border-t px-4 py-3.5 flex-shrink-0" style={{ background: "#ffffff", borderColor: "#f3f4f6" }}>
+                <div className="flex items-end gap-2.5">
                   <textarea
                     ref={inputRef}
                     value={input}
@@ -704,31 +742,26 @@ export function WidgetApp({ config }: WidgetAppProps) {
                     onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                     placeholder="Type a message…"
                     rows={1}
-                    className="flex-1 resize-none rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:border-transparent placeholder:text-slate-400 transition-shadow"
-                    style={{ maxHeight: "120px", minHeight: "38px", lineHeight: "1.5" }}
+                    className="flex-1 resize-none rounded-lg border bg-white px-3.5 py-2.5 text-sm focus:outline-none focus:ring-1 focus:border-gray-400 placeholder:text-gray-400 transition-all text-gray-900"
+                    style={{ 
+                      maxHeight: "120px", 
+                      minHeight: "40px", 
+                      lineHeight: "1.5",
+                      borderColor: "#e5e7eb"
+                    }}
                   />
                   <button
                     onClick={handleSend}
                     disabled={!input.trim() || isTyping}
-                    className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all disabled:opacity-40 hover:opacity-90 active:scale-95 mb-0.5 shadow-sm"
-                    style={{ background: `linear-gradient(135deg, ${color} 0%, ${color}cc 100%)` }}
+                    className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-all disabled:opacity-40 hover:bg-gray-800 active:scale-[0.97] mb-0.5"
+                    style={{ background: "#18181b" }}
                   >
                     <Send className="w-4 h-4 text-white" />
                   </button>
                 </div>
 
-                {showEmojiHint && (
-                  <div className="flex flex-wrap gap-1 mt-2 px-1">
-                    {["👋", "😊", "🙏", "✅", "❓", "👍", "🤔", "😄"].map((emoji) => (
-                      <button key={emoji} onClick={() => { setInput((v) => v + emoji); setShowEmojiHint(false); inputRef.current?.focus(); }} className="text-lg hover:scale-125 transition-transform">
-                        {emoji}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                <p className="text-center text-xs text-slate-300 mt-2 pb-0.5">
-                  Powered by <span style={{ color }}>MJ.TALK</span>
+                <p className="text-center text-xs text-gray-300 mt-3 select-none">
+                  Powered by <span className="font-medium text-gray-400">MJ.TALK</span>
                 </p>
               </div>
             </>
@@ -736,39 +769,41 @@ export function WidgetApp({ config }: WidgetAppProps) {
         </div>
       )}
 
-      {/* ── Minimized pill ── */}
+      {/* ── Minimized pill - Clean & Minimal ── */}
       {isOpen && isMinimized && (
         <button
           onClick={() => setIsMinimized(false)}
-          className="flex items-center gap-2.5 rounded-full px-4 py-2.5 text-white shadow-xl transition-all hover:opacity-90 active:scale-95"
-          style={{ background: `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)` }}
+          className="flex items-center gap-2.5 rounded-full px-4 py-3 bg-white border shadow-lg transition-all hover:shadow-xl active:scale-[0.98]"
+          style={{ borderColor: "#e5e7eb" }}
         >
-          <MessageCircle className="w-4 h-4" />
-          <span className="text-sm font-medium">{config.name}</span>
+          <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: mutedColor }}>
+            <MessageCircle className="w-3.5 h-3.5" style={{ color }} />
+          </div>
+          <span className="text-sm font-medium text-gray-900">{config.name}</span>
           {unreadCount > 0 && (
-            <span className="bg-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center" style={{ color }}>
-              {unreadCount}
+            <span className="bg-red-500 text-white text-xs font-semibold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5">
+              {unreadCount > 9 ? "9+" : unreadCount}
             </span>
           )}
         </button>
       )}
 
-      {/* ── Launcher button ── */}
+      {/* ── Launcher button - Clean & Minimal ── */}
       {!isOpen && (
         <div className="relative">
           {hasNewMessage && (
-            <div className="absolute inset-0 rounded-full animate-ping opacity-60" style={{ background: color }} />
+            <div className="absolute inset-0 rounded-full animate-ping opacity-40 bg-gray-900" />
           )}
           <button
             onClick={handleOpen}
-            className="w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-all hover:scale-110 active:scale-95"
-            style={{ background: `linear-gradient(135deg, ${color} 0%, ${color}cc 100%)` }}
+            className="w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all hover:shadow-xl hover:scale-105 active:scale-95 bg-white border"
+            style={{ borderColor: "#e5e7eb" }}
             aria-label="Open chat"
           >
-            <MessageCircle className="w-6 h-6 text-white" />
+            <MessageCircle className="w-6 h-6 text-gray-900" />
           </button>
           {unreadCount > 0 && (
-            <div className="absolute -top-1 -right-1 min-w-[20px] h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center px-1 shadow">
+            <div className="absolute -top-1 -right-1 min-w-[20px] h-5 bg-red-500 text-white text-xs font-semibold rounded-full flex items-center justify-center px-1.5 shadow-md">
               {unreadCount > 9 ? "9+" : unreadCount}
             </div>
           )}
@@ -777,8 +812,17 @@ export function WidgetApp({ config }: WidgetAppProps) {
 
       <style>{`
         @keyframes widgetSlideIn {
-          from { opacity: 0; transform: translateY(16px) scale(0.96); }
+          from { opacity: 0; transform: translateY(12px) scale(0.97); }
           to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .typing-dot {
+          animation: typingBounce 1.4s ease-in-out infinite;
+        }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typingBounce {
+          0%, 60%, 100% { transform: translateY(0); }
+          30% { transform: translateY(-4px); }
         }
       `}</style>
     </div>
