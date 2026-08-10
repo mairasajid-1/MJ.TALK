@@ -25,7 +25,7 @@
     "  right: 0;",
     "  z-index: 2147483647;",
     "  background: transparent;",
-    "  pointer-events: all;",
+    "  pointer-events: none;",
     "}",
     "@media (max-width: 480px) {",
     "  #supportai-widget-iframe {",

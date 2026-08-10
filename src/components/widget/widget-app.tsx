@@ -469,7 +469,7 @@ export function WidgetApp({ config }: WidgetAppProps) {
 
   /* ══════════════════ RENDER ══════════════════ */
   return (
-    <div className="fixed bottom-6 right-6 z-[2147483647] flex flex-col items-end gap-3 font-sans select-none">
+    <div className="fixed bottom-6 right-6 z-[2147483647] flex flex-col items-end gap-3 font-sans select-none" style={{ pointerEvents: "none" }}>
 
       {/* ── Chat window ── */}
       {isOpen && !isMinimized && (
@@ -481,7 +481,8 @@ export function WidgetApp({ config }: WidgetAppProps) {
             background: "#ffffff",
             borderRadius: "12px",
             borderColor: "#e5e7eb",
-            animation: "widgetSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)" 
+            animation: "widgetSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
+            pointerEvents: "auto"
           }}
         >
           {/* Header - Clean & Minimal */}
@@ -774,7 +775,7 @@ export function WidgetApp({ config }: WidgetAppProps) {
         <button
           onClick={() => setIsMinimized(false)}
           className="flex items-center gap-2.5 rounded-full px-4 py-3 bg-white border shadow-lg transition-all hover:shadow-xl active:scale-[0.98]"
-          style={{ borderColor: "#e5e7eb" }}
+          style={{ borderColor: "#e5e7eb", pointerEvents: "auto" }}
         >
           <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: mutedColor }}>
             <MessageCircle className="w-3.5 h-3.5" style={{ color }} />
@@ -790,7 +791,7 @@ export function WidgetApp({ config }: WidgetAppProps) {
 
       {/* ── Launcher button - Clean & Minimal ── */}
       {!isOpen && (
-        <div className="relative">
+        <div className="relative" style={{ pointerEvents: "auto" }}>
           {hasNewMessage && (
             <div className="absolute inset-0 rounded-full animate-ping opacity-40 bg-gray-900" />
           )}
