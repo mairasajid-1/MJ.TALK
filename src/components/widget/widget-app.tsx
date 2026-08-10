@@ -504,7 +504,7 @@ export function WidgetApp({ config }: WidgetAppProps) {
                   <span 
                     className="w-1.5 h-1.5 rounded-full flex-shrink-0"
                     style={{ 
-                      background: chatState === "agent_joined" ? "#10b981" : "#94a3b8",
+                      background: chatState === "agent_joined" ? "#10b981" : color,
                       opacity: chatState === "ai_responding" || chatState === "waiting_agent" ? 0.6 : 1
                     }} 
                   />
@@ -693,11 +693,12 @@ export function WidgetApp({ config }: WidgetAppProps) {
                     <button
                       onClick={handleRequestHuman}
                       disabled={escalationPending}
-                      className="flex items-center gap-2 text-sm px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 font-medium transition-all hover:bg-gray-50 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center gap-2 text-sm px-4 py-2 rounded-lg font-medium transition-all hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-white"
+                      style={{ background: color }}
                     >
                       {escalationPending ? (
                         <>
-                          <span className="w-3.5 h-3.5 rounded-full border-2 border-gray-400 border-t-transparent animate-spin" />
+                          <span className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
                           Connecting...
                         </>
                       ) : (
@@ -750,19 +751,19 @@ export function WidgetApp({ config }: WidgetAppProps) {
         </div>
       )}
 
-      {/* ── Launcher button - Clean & Minimal ── */}
+      {/* ── Launcher button - Clean & Minimal with Brand Color ── */}
       {!isOpen && (
         <div className="relative" style={{ pointerEvents: "auto" }}>
           {hasNewMessage && (
-            <div className="absolute inset-0 rounded-full animate-ping opacity-40 bg-gray-900" />
+            <div className="absolute inset-0 rounded-full animate-ping opacity-40" style={{ background: color }} />
           )}
           <button
             onClick={handleOpen}
-            className="w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all hover:shadow-xl hover:scale-105 active:scale-95 bg-white border"
-            style={{ borderColor: "#e5e7eb" }}
+            className="w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all hover:shadow-xl hover:scale-105 active:scale-95"
+            style={{ background: color }}
             aria-label="Open chat"
           >
-            <MessageCircle className="w-6 h-6 text-gray-900" />
+            <MessageCircle className="w-6 h-6 text-white" />
           </button>
           {unreadCount > 0 && (
             <div className="absolute -top-1 -right-1 min-w-[20px] h-5 bg-red-500 text-white text-xs font-semibold rounded-full flex items-center justify-center px-1.5 shadow-md">
