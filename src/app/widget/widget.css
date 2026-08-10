@@ -1,0 +1,11 @@
+/* Widget-specific styles - override global backgrounds */
+html,
+body {
+  background: transparent !important;
+  overflow: hidden;
+}
+
+/* Ensure the widget root is transparent */
+#__next {
+  background: transparent;
+}
