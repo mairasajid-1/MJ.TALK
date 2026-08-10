@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   MessageCircle, X, Send, User,
-  RotateCcw, Volume2, VolumeX, Minimize2, UserCheck,
+  RotateCcw, UserCheck,
 } from "lucide-react";
 import { cn, generateSessionId } from "@/lib/utils";
 import type { ChatMessage, PreChatFormData } from "@/types";
@@ -73,13 +73,11 @@ export function WidgetApp({ config }: WidgetAppProps) {
     typeof window !== "undefined" ? window.location.origin : "";
 
   const [isOpen, setIsOpen]           = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
   const [messages, setMessages]       = useState<UIMessage[]>([]);
   const [input, setInput]             = useState("");
   const [isTyping, setIsTyping]       = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [soundEnabled, setSoundEnabled] = useState(true);
   const [sessionId] = useState(() => {
     if (typeof window === "undefined") return generateSessionId();
     const stored = sessionStorage.getItem(`si_${config.id}`);
@@ -162,7 +160,7 @@ export function WidgetApp({ config }: WidgetAppProps) {
             });
             if (!isOpen) { setUnreadCount((c) => c + 1); setHasNewMessage(true); }
             setChatState("agent_joined");
-            if (soundEnabled) playPing();
+            playPing();
           }
         )
         .subscribe();
@@ -314,7 +312,7 @@ export function WidgetApp({ config }: WidgetAppProps) {
         } else {
           setChatState("idle");
         }
-        if (soundEnabled && fullText) playPing();
+        if (fullText) playPing();
         
       } else {
         const replyText = await res.text();
@@ -332,7 +330,7 @@ export function WidgetApp({ config }: WidgetAppProps) {
         } else {
           setChatState("idle");
         }
-        if (soundEnabled) playPing();
+        playPing();
       }
       
       setIsTyping(false);
@@ -401,7 +399,6 @@ export function WidgetApp({ config }: WidgetAppProps) {
 
   const handleOpen = () => {
     setIsOpen(true);
-    setIsMinimized(false);
     if (!config.pre_chat_form_enabled && messages.length === 0 && !conversationId) {
       setMessages([{ id: "welcome", role: "assistant", content: `Hi! 👋 I'm ${config.name}. How can I help you today?`, timestamp: new Date() }]);
     }
@@ -472,7 +469,7 @@ export function WidgetApp({ config }: WidgetAppProps) {
     <div className="fixed bottom-6 right-6 z-[2147483647] flex flex-col items-end gap-3 font-sans select-none" style={{ pointerEvents: "none" }}>
 
       {/* ── Chat window ── */}
-      {isOpen && !isMinimized && (
+      {isOpen && (
         <div
           className="flex flex-col overflow-hidden border shadow-2xl"
           style={{ 
@@ -523,23 +520,6 @@ export function WidgetApp({ config }: WidgetAppProps) {
               </div>
             </div>
             <div className="flex items-center gap-1">
-              <button 
-                onClick={() => setSoundEnabled((s) => !s)} 
-                className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-100 transition-colors"
-                title={soundEnabled ? "Mute" : "Unmute"}
-              >
-                {soundEnabled ? 
-                  <Volume2 className="w-4 h-4 text-gray-500" /> : 
-                  <VolumeX className="w-4 h-4 text-gray-500" />
-                }
-              </button>
-              <button 
-                onClick={() => setIsMinimized(true)} 
-                className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-100 transition-colors"
-                title="Minimize"
-              >
-                <Minimize2 className="w-4 h-4 text-gray-500" />
-              </button>
               <button 
                 onClick={handleReset} 
                 className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-100 transition-colors"
@@ -768,25 +748,6 @@ export function WidgetApp({ config }: WidgetAppProps) {
             </>
           )}
         </div>
-      )}
-
-      {/* ── Minimized pill - Clean & Minimal ── */}
-      {isOpen && isMinimized && (
-        <button
-          onClick={() => setIsMinimized(false)}
-          className="flex items-center gap-2.5 rounded-full px-4 py-3 bg-white border shadow-lg transition-all hover:shadow-xl active:scale-[0.98]"
-          style={{ borderColor: "#e5e7eb", pointerEvents: "auto" }}
-        >
-          <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: mutedColor }}>
-            <MessageCircle className="w-3.5 h-3.5" style={{ color }} />
-          </div>
-          <span className="text-sm font-medium text-gray-900">{config.name}</span>
-          {unreadCount > 0 && (
-            <span className="bg-red-500 text-white text-xs font-semibold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5">
-              {unreadCount > 9 ? "9+" : unreadCount}
-            </span>
-          )}
-        </button>
       )}
 
       {/* ── Launcher button - Clean & Minimal ── */}
