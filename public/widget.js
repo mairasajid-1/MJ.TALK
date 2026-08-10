@@ -44,7 +44,9 @@
   iframe.src = apiUrl + "/widget/" + encodeURIComponent(chatbotId);
   iframe.setAttribute("title", "Support Chat");
   iframe.setAttribute("allow", "clipboard-write");
+  iframe.setAttribute("allowtransparency", "true");
   iframe.setAttribute("aria-label", "Support Chat Widget");
+  iframe.style.background = "transparent";
   document.body.appendChild(iframe);
 
   // Public JS API for host page

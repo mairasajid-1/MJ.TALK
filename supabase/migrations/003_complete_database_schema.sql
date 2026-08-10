@@ -194,14 +194,22 @@ CREATE INDEX IF NOT EXISTS idx_typing_indicators_expires ON typing_indicators(ex
 CREATE INDEX IF NOT EXISTS idx_purchase_requests_org ON purchase_requests(org_id);
 CREATE INDEX IF NOT EXISTS idx_purchase_requests_status ON purchase_requests(status);
 
--- KB articles indexes (created only if table exists)
+-- KB articles indexes (only if columns exist - kb_articles table should have been created above)
+-- Skip if table doesn't exist to avoid errors
 DO $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM pg_tables WHERE tablename = 'kb_articles') THEN
-    CREATE INDEX IF NOT EXISTS idx_kb_chatbot ON kb_articles(chatbot_id);
-    CREATE INDEX IF NOT EXISTS idx_kb_org ON kb_articles(org_id);
-    CREATE INDEX IF NOT EXISTS idx_kb_category ON kb_articles(category);
-    CREATE INDEX IF NOT EXISTS idx_kb_published ON kb_articles(is_published) WHERE is_published = TRUE;
+  -- Check if kb_articles table exists AND has the chatbot_id column
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+    AND table_name = 'kb_articles' 
+    AND column_name = 'chatbot_id'
+  ) THEN
+    -- Use EXECUTE to run DDL inside the block
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_kb_chatbot ON kb_articles(chatbot_id)';
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_kb_org ON kb_articles(org_id)';
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_kb_category ON kb_articles(category)';
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_kb_published ON kb_articles(is_published) WHERE is_published = TRUE';
   END IF;
 END $$;
 
@@ -392,30 +400,20 @@ DROP POLICY IF EXISTS "org_access" ON organizations;
 CREATE POLICY "org_access" ON organizations FOR ALL
   USING (
     owner_id = auth.uid() OR
-    id IN (SELECT org_id FROM team_members WHERE user_id = auth.uid())
+    id IN (SELECT public.my_org_ids())
   );
 
 -- Chatbots
 DROP POLICY IF EXISTS "chatbot_access" ON chatbots;
 CREATE POLICY "chatbot_access" ON chatbots FOR ALL
-  USING (
-    org_id IN (
-      SELECT id FROM organizations
-      WHERE owner_id = auth.uid()
-         OR id IN (SELECT org_id FROM team_members WHERE user_id = auth.uid())
-    )
-  );
+  USING (org_id IN (SELECT public.my_org_ids()));
 
 -- Conversations - org members + public widget
 DROP POLICY IF EXISTS "conversation_org_access" ON conversations;
 CREATE POLICY "conversation_org_access" ON conversations FOR ALL
   USING (
     chatbot_id IN (
-      SELECT id FROM chatbots WHERE org_id IN (
-        SELECT id FROM organizations
-        WHERE owner_id = auth.uid()
-           OR id IN (SELECT org_id FROM team_members WHERE user_id = auth.uid())
-      )
+      SELECT id FROM chatbots WHERE org_id IN (SELECT public.my_org_ids())
     )
   );
 
@@ -433,11 +431,7 @@ CREATE POLICY "message_org_access" ON messages FOR ALL
   USING (
     conversation_id IN (
       SELECT id FROM conversations WHERE chatbot_id IN (
-        SELECT id FROM chatbots WHERE org_id IN (
-          SELECT id FROM organizations
-          WHERE owner_id = auth.uid()
-             OR id IN (SELECT org_id FROM team_members WHERE user_id = auth.uid())
-        )
+        SELECT id FROM chatbots WHERE org_id IN (SELECT public.my_org_ids())
       )
     )
   );
@@ -454,19 +448,15 @@ CREATE POLICY "message_public_select" ON messages FOR SELECT
 DROP POLICY IF EXISTS "notification_access" ON notifications;
 CREATE POLICY "notification_access" ON notifications FOR ALL
   USING (
-    org_id IN (
-      SELECT id FROM organizations
-      WHERE owner_id = auth.uid()
-         OR id IN (SELECT org_id FROM team_members WHERE user_id = auth.uid())
-    )
+    org_id IN (SELECT public.my_org_ids())
     OR target_user_id = auth.uid()
   );
 
--- Team members
+-- Team members (avoid recursion by using direct checks)
 DROP POLICY IF EXISTS "team_access" ON team_members;
 CREATE POLICY "team_access" ON team_members FOR ALL
   USING (
-    org_id IN (SELECT id FROM organizations WHERE owner_id = auth.uid())
+    org_id IN (SELECT public.my_owned_org_ids())
     OR user_id = auth.uid()
   );
 
@@ -490,11 +480,7 @@ CREATE POLICY "typing_indicator_org" ON typing_indicators FOR ALL
   USING (
     conversation_id IN (
       SELECT id FROM conversations WHERE chatbot_id IN (
-        SELECT id FROM chatbots WHERE org_id IN (
-          SELECT id FROM organizations
-          WHERE owner_id = auth.uid()
-             OR id IN (SELECT org_id FROM team_members WHERE user_id = auth.uid())
-        )
+        SELECT id FROM chatbots WHERE org_id IN (SELECT public.my_org_ids())
       )
     )
   );
@@ -502,13 +488,7 @@ CREATE POLICY "typing_indicator_org" ON typing_indicators FOR ALL
 -- KB Articles
 DROP POLICY IF EXISTS "kb_org_access" ON kb_articles;
 CREATE POLICY "kb_org_access" ON kb_articles FOR ALL
-  USING (
-    org_id IN (
-      SELECT id FROM organizations
-      WHERE owner_id = auth.uid()
-         OR id IN (SELECT org_id FROM team_members WHERE user_id = auth.uid())
-    )
-  );
+  USING (org_id IN (SELECT public.my_org_ids()));
 
 DROP POLICY IF EXISTS "kb_public_read" ON kb_articles;
 CREATE POLICY "kb_public_read" ON kb_articles FOR SELECT
@@ -517,13 +497,7 @@ CREATE POLICY "kb_public_read" ON kb_articles FOR SELECT
 -- Purchase requests
 DROP POLICY IF EXISTS "purchase_request_org" ON purchase_requests;
 CREATE POLICY "purchase_request_org" ON purchase_requests FOR ALL
-  USING (
-    org_id IN (
-      SELECT id FROM organizations
-      WHERE owner_id = auth.uid()
-         OR id IN (SELECT org_id FROM team_members WHERE user_id = auth.uid())
-    )
-  );
+  USING (org_id IN (SELECT public.my_org_ids()));
 
 -- =====================================================
 -- STEP 11: Enable Realtime for Key Tables

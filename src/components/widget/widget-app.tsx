@@ -476,7 +476,7 @@ export function WidgetApp({ config }: WidgetAppProps) {
       {isOpen && !isMinimized && (
         <div
           className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 shadow-2xl"
-          style={{ width: "370px", height: "580px", background: "#fff", animation: "widgetSlideIn 0.22s cubic-bezier(0.34,1.56,0.64,1)" }}
+          style={{ width: "370px", height: "580px", animation: "widgetSlideIn 0.22s cubic-bezier(0.34,1.56,0.64,1)" }}
         >
           {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3 flex-shrink-0"
@@ -525,7 +525,7 @@ export function WidgetApp({ config }: WidgetAppProps) {
 
           {/* Pre-chat form */}
           {showPreChat ? (
-            <div className="flex-1 overflow-y-auto p-5 bg-slate-50">
+            <div className="flex-1 overflow-y-auto p-5" style={{ background: "#f8fafc" }}>
               <div className="text-center mb-6">
                 <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-sm" style={{ background: lightColor }}>
                   <MessageCircle className="w-8 h-8" style={{ color }} />
@@ -551,7 +551,7 @@ export function WidgetApp({ config }: WidgetAppProps) {
           ) : (
             <>
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50" style={{ scrollBehavior: "smooth" }}>
+              <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ scrollBehavior: "smooth", background: "#f8fafc" }}>
                 {messages.map((msg, i) => {
                   const isUser = msg.role === "user";
                   const showTime = i === messages.length - 1 || Math.abs(messages[i + 1].timestamp.getTime() - msg.timestamp.getTime()) > 60000;
@@ -576,10 +576,10 @@ export function WidgetApp({ config }: WidgetAppProps) {
                         <div
                           className={cn(
                             "px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed break-words",
-                            isUser ? "text-white rounded-tr-sm shadow-sm" : "bg-white border border-slate-100 text-slate-800 rounded-tl-sm shadow-sm",
+                            isUser ? "text-white rounded-tr-sm shadow-sm" : "border border-slate-100 text-slate-800 rounded-tl-sm shadow-sm",
                             msg.role === "admin" && "!bg-emerald-500 !text-white !border-emerald-400"
                           )}
-                          style={isUser ? { background: `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)` } : {}}
+                          style={isUser ? { background: `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)` } : { background: "#ffffff" }}
                           {...(isUser ? {} : { dangerouslySetInnerHTML: { __html: renderMarkdown(msg.content) } })}
                         >
                           {isUser ? msg.content : undefined}
@@ -603,7 +603,7 @@ export function WidgetApp({ config }: WidgetAppProps) {
                         ? <User className="w-3.5 h-3.5" style={{ color }} />
                         : <MessageCircle className="w-3.5 h-3.5" style={{ color }} />}
                     </div>
-                    <div className="bg-white border border-slate-100 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
+                    <div className="border border-slate-100 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm" style={{ background: "#ffffff" }}>
                       <div className="flex gap-1 items-center h-4">
                         {[0, 1, 2].map((i) => (
                           <div key={i} className="w-1.5 h-1.5 rounded-full typing-dot" style={{ backgroundColor: `${color}99` }} />
@@ -684,7 +684,7 @@ export function WidgetApp({ config }: WidgetAppProps) {
               </div>
 
               {/* Input bar */}
-              <div className="bg-white border-t border-slate-100 px-3 py-2.5 flex-shrink-0">
+              <div className="border-t border-slate-100 px-3 py-2.5 flex-shrink-0" style={{ background: "#ffffff" }}>
                 <div className="flex items-end gap-2">
                   <button onClick={() => setShowEmojiHint((s) => !s)} className="w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors flex-shrink-0 mb-1" title="Emoji">
                     <Smile className="w-4 h-4" />
