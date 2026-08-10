@@ -476,7 +476,12 @@ export function WidgetApp({ config }: WidgetAppProps) {
       {isOpen && !isMinimized && (
         <div
           className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 shadow-2xl"
-          style={{ width: "370px", height: "580px", animation: "widgetSlideIn 0.22s cubic-bezier(0.34,1.56,0.64,1)" }}
+          style={{ 
+            width: "370px", 
+            height: "580px", 
+            background: "#ffffff",
+            animation: "widgetSlideIn 0.22s cubic-bezier(0.34,1.56,0.64,1)" 
+          }}
         >
           {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3 flex-shrink-0"
