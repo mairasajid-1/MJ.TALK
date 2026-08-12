@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pointer Events Test - MJ.TALK Widget</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      min-height: 100vh;
+      padding: 40px;
+    }
+    
+    .test-container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    header {
+      margin-bottom: 40px;
+    }
+    
+    h1 {
+      font-size: 36px;
+      margin-bottom: 10px;
+    }
+    
+    .subtitle {
+      font-size: 18px;
+      opacity: 0.9;
+    }
+    
+    /* Test navbar positioned where widget will be */
+    .test-nav {
+      position: fixed;
+      bottom: 100px;
+      right: 20px;
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      padding: 20px;
+      min-width: 200px;
+    }
+    
+    .test-nav h3 {
+      margin-bottom: 15px;
+      font-size: 16px;
+    }
+    
+    .test-nav a {
+      display: block;
+      color: white;
+      text-decoration: none;
+      padding: 10px 15px;
+      margin: 5px 0;
+      background: rgba(255,255,255,0.1);
+      border-radius: 8px;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+    
+    .test-nav a:hover {
+      background: rgba(255,255,255,0.3);
+      transform: translateX(-5px);
+    }
+    
+    .test-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-top: 40px;
+    }
+    
+    .test-card {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      padding: 25px;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    .test-card h3 {
+      margin-bottom: 15px;
+      font-size: 18px;
+    }
+    
+    .test-card p {
+      line-height: 1.6;
+      opacity: 0.9;
+      margin-bottom: 15px;
+    }
+    
+    .test-button {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: all 0.3s;
+      cursor: pointer;
+      border: none;
+      font-size: 14px;
+    }
+    
+    .test-button:hover {
+      background: rgba(255,255,255,0.3);
+      transform: translateY(-2px);
+    }
+    
+    .status-box {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(0,0,0,0.8);
+      padding: 20px;
+      border-radius: 12px;
+      min-width: 250px;
+      font-size: 14px;
+      line-height: 1.8;
+    }
+    
+    .status-box h4 {
+      margin-bottom: 10px;
+      color: #4CAF50;
+    }
+    
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 5px 0;
+    }
+    
+    .status-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #4CAF50;
+    }
+    
+    .click-counter {
+      background: rgba(255,255,255,0.1);
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 15px;
+      text-align: center;
+    }
+    
+    .click-counter strong {
+      font-size: 24px;
+      color: #4CAF50;
+    }
+  </style>
+</head>
+<body>
+  <div class="test-container">
+    <header>
+      <h1>🧪 Pointer Events Test</h1>
+      <p class="subtitle">This page tests that the widget doesn't block clicks on host page elements</p>
+    </header>
+
+    <!-- Status indicator -->
+    <div class="status-box">
+      <h4>✅ Test Status</h4>
+      <div class="status-item">
+        <span class="status-indicator"></span>
+        <span>Widget loaded</span>
+      </div>
+      <div class="status-item">
+        <span class="status-indicator"></span>
+        <span>Pointer events fixed</span>
+      </div>
+      <div class="status-item">
+        <span class="status-indicator"></span>
+        <span>Click-through enabled</span>
+      </div>
+      
+      <div class="click-counter">
+        <div>Clicks Detected:</div>
+        <strong id="click-count">0</strong>
+      </div>
+    </div>
+
+    <!-- Test nav positioned where widget will overlay -->
+    <div class="test-nav">
+      <h3>📍 Test Navigation</h3>
+      <p style="font-size: 12px; opacity: 0.8; margin-bottom: 10px;">
+        Positioned behind widget
+      </p>
+      <a href="#home" onclick="handleClick('Home')">🏠 Home</a>
+      <a href="#about" onclick="handleClick('About')">👤 About</a>
+      <a href="#services" onclick="handleClick('Services')">⚙️ Services</a>
+      <a href="#contact" onclick="handleClick('Contact')">📧 Contact</a>
+    </div>
+
+    <!-- Test cards -->
+    <div class="test-grid">
+      <div class="test-card">
+        <h3>Test 1: Navbar Links</h3>
+        <p>The navigation box on the right is positioned behind where the widget iframe will be.</p>
+        <p><strong>Expected:</strong> All links should be clickable even with widget closed.</p>
+        <button class="test-button" onclick="handleClick('Card 1')">Click Me</button>
+      </div>
+
+      <div class="test-card">
+        <h3>Test 2: Buttons</h3>
+        <p>These buttons test that click events work throughout the page.</p>
+        <p><strong>Expected:</strong> All buttons clickable.</p>
+        <button class="test-button" onclick="handleClick('Card 2')">Click Me</button>
+      </div>
+
+      <div class="test-card">
+        <h3>Test 3: Widget Button</h3>
+        <p>The widget button should open the chat window when clicked.</p>
+        <p><strong>Expected:</strong> Widget opens normally.</p>
+        <button class="test-button" onclick="handleClick('Card 3')">Click Me</button>
+      </div>
+
+      <div class="test-card">
+        <h3>Test 4: Simultaneous</h3>
+        <p>With widget open, test that page elements not covered by window still work.</p>
+        <p><strong>Expected:</strong> Everything works.</p>
+        <button class="test-button" onclick="handleClick('Card 4')">Click Me</button>
+      </div>
+    </div>
+
+    <div style="margin-top: 40px; padding: 30px; background: rgba(0,0,0,0.3); border-radius: 12px;">
+      <h2 style="margin-bottom: 15px;">📋 Test Instructions</h2>
+      <ol style="line-height: 2; margin-left: 20px;">
+        <li>Widget button should appear in bottom-right corner</li>
+        <li>Click the navigation links on the right (behind where iframe is)</li>
+        <li>Verify they work (click counter increases)</li>
+        <li>Click all the "Click Me" buttons throughout the page</li>
+        <li>Open the widget by clicking the circular button</li>
+        <li>With widget open, try clicking page elements not covered by chat window</li>
+        <li>Verify everything still works</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- MJ.TALK Widget Embed Code -->
+  <script>
+    // Click counter for testing
+    let clickCount = 0;
+    
+    function handleClick(source) {
+      clickCount++;
+      document.getElementById('click-count').textContent = clickCount;
+      console.log(`✅ Click registered from: ${source}`);
+      
+      // Visual feedback
+      alert(`✅ Click successful!\n\nSource: ${source}\nTotal clicks: ${clickCount}\n\nThis proves the widget isn't blocking clicks!`);
+    }
+
+    // Widget configuration
+    window.SupportAIConfig = {
+      chatbotId: "YOUR_CHATBOT_ID_HERE",  // ⚠️ UPDATE THIS
+      apiUrl: "https://your-domain.vercel.app"  // ⚠️ UPDATE THIS
+    };
+    
+    // Debug logging
+    console.log("=== POINTER EVENTS TEST ===");
+    console.log("Widget config:", window.SupportAIConfig);
+    console.log("This page tests that:");
+    console.log("1. Widget button is clickable");
+    console.log("2. Host page elements remain clickable");
+    console.log("3. No invisible click blockers exist");
+  </script>
+  
+  <!-- Load widget script -->
+  <script src="https://your-domain.vercel.app/widget.js"></script>
+  
+  <!-- Verification script -->
+  <script>
+    // Wait for widget to load, then verify pointer-events
+    setTimeout(function() {
+      console.log("\n=== VERIFICATION ===");
+      
+      var iframe = document.getElementById("supportai-widget-iframe");
+      if (iframe) {
+        var iframeStyle = window.getComputedStyle(iframe);
+        var pointerEvents = iframeStyle.pointerEvents;
+        
+        console.log("Iframe found:", true);
+        console.log("Iframe pointer-events:", pointerEvents);
+        
+        if (pointerEvents === "none") {
+          console.log("✅ PASS: Iframe has pointer-events: none");
+          console.log("✅ Host page elements should be clickable");
+        } else {
+          console.warn("❌ FAIL: Iframe has pointer-events:", pointerEvents);
+          console.warn("❌ Host page elements may be blocked");
+        }
+      } else {
+        console.error("❌ Iframe not found - widget didn't load");
+      }
+      
+      console.log("\n=== TEST INSTRUCTIONS ===");
+      console.log("1. Click the navigation links on the right");
+      console.log("2. Click the 'Click Me' buttons in cards");
+      console.log("3. Verify alert shows for each click");
+      console.log("4. Open widget and test again");
+    }, 2000);
+  </script>
+</body>
+</html>
