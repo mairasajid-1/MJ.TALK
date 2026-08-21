@@ -1,6 +1,7 @@
 import { requireAuth } from "@/lib/auth";
 import { createServiceClient } from "@/lib/supabase/server";
 import { getOrgId } from "@/lib/get-org";
+import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, BookOpen } from "lucide-react";
@@ -28,12 +29,37 @@ export default async function KnowledgeBasePage({
 
   if (!chatbot) notFound();
 
-  // Load existing articles
-  const { data: articles } = await supabase
-    .from("kb_articles")
-    .select("*")
-    .eq("chatbot_id", id)
-    .order("created_at", { ascending: false });
+  // Load existing articles with Prisma primary / Supabase fallback
+  let articles: any[] = [];
+  if (process.env.DATABASE_URL) {
+    try {
+      articles = await prisma.kbArticle.findMany({
+        where: { chatbot_id: id, org_id: orgId },
+        orderBy: { created_at: "desc" },
+      });
+    } catch {
+      const { data } = await supabase
+        .from("kb_articles")
+        .select("*")
+        .eq("chatbot_id", id)
+        .order("created_at", { ascending: false });
+      articles = data ?? [];
+    }
+  } else {
+    const { data } = await supabase
+      .from("kb_articles")
+      .select("*")
+      .eq("chatbot_id", id)
+      .order("created_at", { ascending: false });
+    articles = data ?? [];
+  }
+
+  // Normalize articles to guarantee category field exists
+  const normalizedArticles = articles.map((art: any) => ({
+    ...art,
+    category: art.category ?? "general",
+    tags: art.tags ?? [],
+  }));
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -64,7 +90,7 @@ export default async function KnowledgeBasePage({
       <KnowledgeBaseManager
         chatbotId={id}
         chatbotName={chatbot.name}
-        initialArticles={articles ?? []}
+        initialArticles={normalizedArticles}
       />
     </div>
   );

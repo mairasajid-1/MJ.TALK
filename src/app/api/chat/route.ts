@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -41,12 +42,40 @@ function detectIntent(text: string): { label: string; confidence: number } {
 /* ── Fetch relevant KB articles for this chatbot ── */
 async function getKbContext(supabase: ReturnType<typeof createServiceClient>, chatbotId: string, userMessage: string): Promise<string> {
   try {
-    const { data: articles } = await supabase
-      .from("kb_articles")
-      .select("title, content, category")
-      .eq("chatbot_id", chatbotId)
-      .eq("is_published", true)
-      .limit(8);
+    let articles: Array<{ title: string; content: string; category?: string | null }> = [];
+
+    if (process.env.DATABASE_URL) {
+      try {
+        articles = await prisma.kbArticle.findMany({
+          where: { chatbot_id: chatbotId, is_published: true },
+          select: { title: true, content: true, category: true },
+          take: 8,
+        });
+      } catch {
+        // Fallback to Supabase below
+      }
+    }
+
+    if (articles.length === 0) {
+      const { data, error } = await supabase
+        .from("kb_articles")
+        .select("title, content, category")
+        .eq("chatbot_id", chatbotId)
+        .eq("is_published", true)
+        .limit(8);
+
+      if (error && error.message?.includes("category")) {
+        const { data: fbData } = await supabase
+          .from("kb_articles")
+          .select("title, content")
+          .eq("chatbot_id", chatbotId)
+          .eq("is_published", true)
+          .limit(8);
+        articles = fbData ?? [];
+      } else {
+        articles = data ?? [];
+      }
+    }
 
     if (!articles || articles.length === 0) return "";
 
