@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("Connecting to PostgreSQL database via Prisma...");
 
-  // 1. Ensure kb_articles table exists with category column
+  // 1. Ensure kb_articles table exists with all columns
   await prisma.$executeRawUnsafe(`
     CREATE TABLE IF NOT EXISTS public.kb_articles (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -39,7 +39,13 @@ async function main() {
     ADD COLUMN IF NOT EXISTS is_published BOOLEAN DEFAULT TRUE;
   `);
 
-  // 5. Update category check constraint
+  // 5. Ensure created_by column exists
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE public.kb_articles 
+    ADD COLUMN IF NOT EXISTS created_by UUID;
+  `);
+
+  // 6. Update category check constraint
   try {
     await prisma.$executeRawUnsafe(`
       ALTER TABLE public.kb_articles DROP CONSTRAINT IF EXISTS kb_articles_category_check;
@@ -53,7 +59,7 @@ async function main() {
     console.warn("Constraint notice:", err.message);
   }
 
-  // 6. Reload Supabase PostgREST schema cache
+  // 7. Reload Supabase PostgREST schema cache
   try {
     await prisma.$executeRawUnsafe(`NOTIFY pgrst, 'reload schema';`);
   } catch (err) {
@@ -62,7 +68,7 @@ async function main() {
 
   console.log("==============================================");
   console.log("✅ SUCCESS: Database schema updated via Prisma!");
-  console.log("✅ kb_articles category column verified/added");
+  console.log("✅ kb_articles category and created_by columns verified!");
   console.log("==============================================");
 }
 

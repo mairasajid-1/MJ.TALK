@@ -35,7 +35,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       }
     }
 
-    // 2. Supabase fallback
+    // 2. Supabase fallback with dynamic column error retry loop
     const supabase = createServiceClient();
     const updateData: Record<string, unknown> = {};
     if (title !== undefined) updateData.title = title.trim();
@@ -44,33 +44,34 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (tags !== undefined) updateData.tags = tags;
     if (isPublished !== undefined) updateData.is_published = isPublished;
 
-    const { data, error } = await supabase
-      .from("kb_articles")
-      .update(updateData)
-      .eq("id", id)
-      .eq("org_id", orgId)
-      .select()
-      .single();
+    let attempts = 0;
+    while (attempts < 5) {
+      attempts++;
+      const { data, error } = await supabase
+        .from("kb_articles")
+        .update(updateData)
+        .eq("id", id)
+        .eq("org_id", orgId)
+        .select()
+        .single();
 
-    if (error) {
-      if (error.message?.includes("category")) {
-        delete updateData.category;
-        const { data: fbData, error: fbError } = await supabase
-          .from("kb_articles")
-          .update(updateData)
-          .eq("id", id)
-          .eq("org_id", orgId)
-          .select()
-          .single();
-
-        if (fbError) return NextResponse.json({ error: fbError.message }, { status: 500 });
-        return NextResponse.json({ article: { ...fbData, category: category || "general" } });
+      if (!error) {
+        if (!data) return NextResponse.json({ error: "Not found" }, { status: 404 });
+        return NextResponse.json({ article: { category: category || "general", ...data } });
       }
+
+      const missingMatch = error.message?.match(/Could not find the '([^']+)' column/i);
+      if (missingMatch && missingMatch[1] && missingMatch[1] in updateData) {
+        const missingCol = missingMatch[1];
+        console.warn(`Supabase schema cache missing column '${missingCol}', stripping and retrying update...`);
+        delete updateData[missingCol];
+        continue;
+      }
+
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    if (!data) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    return NextResponse.json({ article: data });
+    return NextResponse.json({ error: "Could not update article after retries" }, { status: 500 });
   } catch (err: any) {
     return NextResponse.json({ error: err?.message || "Unauthorized" }, { status: 401 });
   }

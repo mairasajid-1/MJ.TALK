@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
 
     const { data, error } = await query;
     if (error) {
-      if (error.message?.includes("category")) {
+      if (error.message?.includes("category") || error.message?.includes("column")) {
         const fallbackQuery = supabase
           .from("kb_articles")
           .select("id, chatbot_id, org_id, title, content, is_published, created_at, updated_at")
@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 2. Try Supabase insert
+    // 2. Try Supabase insert with dynamic schema cache column fallback loop
     const insertPayload: Record<string, unknown> = {
       chatbot_id: chatbotId,
       org_id: orgId,
@@ -125,29 +125,32 @@ export async function POST(req: NextRequest) {
       created_by: user.id,
     };
 
-    const { data, error } = await supabase
-      .from("kb_articles")
-      .insert(insertPayload)
-      .select()
-      .single();
+    let attempts = 0;
+    while (attempts < 5) {
+      attempts++;
+      const { data, error } = await supabase
+        .from("kb_articles")
+        .insert(insertPayload)
+        .select()
+        .single();
 
-    if (error) {
-      // If schema cache missing category column, delete category key and retry
-      if (error.message?.includes("category")) {
-        delete insertPayload.category;
-        const { data: fbData, error: fbError } = await supabase
-          .from("kb_articles")
-          .insert(insertPayload)
-          .select()
-          .single();
-
-        if (fbError) return NextResponse.json({ error: fbError.message }, { status: 500 });
-        return NextResponse.json({ article: { ...fbData, category: "general" } }, { status: 201 });
+      if (!error) {
+        return NextResponse.json({ article: { category: "general", ...data } }, { status: 201 });
       }
+
+      // Check if error is missing column in schema cache (e.g. Could not find the 'xxx' column)
+      const missingMatch = error.message?.match(/Could not find the '([^']+)' column/i);
+      if (missingMatch && missingMatch[1] && missingMatch[1] in insertPayload) {
+        const missingCol = missingMatch[1];
+        console.warn(`Supabase schema cache missing column '${missingCol}', stripping and retrying...`);
+        delete insertPayload[missingCol];
+        continue;
+      }
+
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ article: data }, { status: 201 });
+    return NextResponse.json({ error: "Could not save article after retries" }, { status: 500 });
   } catch (err: any) {
     return NextResponse.json({ error: err?.message || "Unauthorized" }, { status: 401 });
   }
